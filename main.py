@@ -199,9 +199,11 @@ text_editor.configure(font=('Arial',12))
 status_bar=tk.Label(application,text='Status Bar')
 status_bar.pack(side=tk.BOTTOM)
 
-
+text_changed=False
 def changed(event=None):
+    global text_changed
     if text_editor.edit_modified():
+        text_changed=True
         words=len(text_editor.get(1.0,'end-1c').split())
         ch=len(text_editor.get(1.0,'end-1c'))
         status_bar.config(text=f"Characters : {ch}          Words: {words}")
@@ -212,19 +214,118 @@ text_editor.bind("<<Modified>>",changed)
 
 
 #..........................................Main Menu Functionality..................
+
+url=''
+#new_file functionality
+def new_file():
+    global url
+    url=''
+    text_editor.delete(1.0,tk.END)
+
+#open_file functionality
+def open_file(event=None):
+    global url
+    url=filedialog.askopenfilename(initialdir=os.getcwd(),title='Select Files',filetypes=(('Text file','*.txt'),('All Files','*.*')))
+    try:
+        with open(url,'r') as fr:
+            text_editor.delete(1.0,tk.END)
+            text_editor.insert(1.0,fr.read())
+    except FileNotFoundError:
+        return
+    application.title(os.path.basename(url))
+
+def save_file(event=None):
+    global url
+    try:
+        if url:
+            content=str(text_editor.get(1.0,tk.END))
+            with open(url,'w',encoding='utf-8') as fw:
+                fw.write(content)
+        else:
+            url = filedialog.asksaveasfile(mode='w', defaultextension=".txt",filetypes=(('Text file', '*.txt'), ('All Files', '*.*')))
+            content2=text_editor.get(1.0,tk.END)
+            url.write(content2)
+            url.close()
+    except:
+        return
+
+def saveas_file(event=None):
+    global url
+    try:
+        content=text_editor.get(1.0,tk.END)
+        url=filedialog.asksaveasfile(mode='w',defaultextension='.txt',filetypes=(('Text file', '*.txt'), ('All Files', '*.*')))
+        url.write(content)
+        url.close()
+    except:
+        return
+
+def exit_func(event=None):
+    global url,text_changed
+    try:
+        if text_changed:
+            mbox=messagebox.askyesnocancel('Warning','Do you want to save this file ?')
+            if mbox is True:
+                if url:
+                    content=text_editor.get(1.0,tk.END)
+                    with open(url,'w',encoding='utf-8') as fw:
+                        fw.write(content)
+                        application.destroy()
+                else:
+                    content2 = text_editor.get(1.0, tk.END)
+                    url = filedialog.asksaveasfile(mode='w', defaultextension='.txt',filetypes=(('Text file', '*.txt'), ('All Files', '*.*')))
+                    url.write(content2)
+                    url.close()
+                    application.destroy()
+            elif mbox is False:
+                application.destroy()
+        else:
+            application.destroy()
+    except:
+        return
+
+
 #file menu commands
-file.add_command(label="New",image=new_icon,compound=tk.LEFT)
-file.add_command(label="Open",image=open_icon,compound=tk.LEFT)
-file.add_command(label="Save",image=save_icon,compound=tk.LEFT)
-file.add_command(label="Save As",image=saveas_icon,compound=tk.LEFT)
-file.add_command(label="Exit",image=exit_icon,compound=tk.LEFT)
+file.add_command(label="New",image=new_icon,compound=tk.LEFT,command=new_file)
+file.add_command(label="Open",image=open_icon,compound=tk.LEFT,command=open_file)
+file.add_command(label="Save",image=save_icon,compound=tk.LEFT,command=save_file)
+file.add_command(label="Save As",image=saveas_icon,compound=tk.LEFT,command=saveas_file)
+file.add_command(label="Exit",image=exit_icon,compound=tk.LEFT,command=exit_func)
+
+# Edit file functionalities
+def find_func():
+    find_dialogue=tk.Toplevel()
+    find_dialogue.geometry('400x250+500+200')
+    find_dialogue.title("Find")
+    find_dialogue.resizable(0,0)
+
+    find_frame=ttk.LabelFrame(find_dialogue,text='Find/Replace')
+    find_frame.pack(pady=20)
+
+    text_find_label=ttk.Label(find_frame,text='Find : ')
+    text_replace_label=ttk.Label(find_frame,text="Replace : ")
+
+    find_input=ttk.Entry(find_frame,width=30)
+    replace_input=ttk.Entry(find_frame,width=30)
+
+    find_bttn=ttk.Button(find_frame,text='Find')
+    replace_bttn=ttk.Button(find_frame,text='Replace',)
+
+    text_find_label.grid(row=0,column=0,padx=4,pady=4)
+    text_replace_label.grid(row=1, column=0, padx=4, pady=4)
+    find_input.grid(row=0,column=1,padx=4,pady=4)
+    replace_input.grid(row=1, column=1, padx=4, pady=4)
+    find_bttn.grid(row=2,column=0,padx=8,pady=4)
+    replace_bttn.grid(row=2, column=1, padx=8, pady=4)
+
+    find_dialogue.mainloop()
+
 
 #edit menu commands
-edit.add_command(label="Cut",image=cut_icon,compound=tk.LEFT)
-edit.add_command(label="Copy",image=copy_icon,compound=tk.LEFT)
-edit.add_command(label="Paste",image=paste_icon,compound=tk.LEFT)
-edit.add_command(label="Clear All",image=clear_icon,compound=tk.LEFT)
-edit.add_command(label="Find",image=find_icon,compound=tk.LEFT)
+edit.add_command(label="Cut",image=cut_icon,compound=tk.LEFT,command=lambda:text_editor.event_generate("<<Cut>>"))
+edit.add_command(label="Copy",image=copy_icon,compound=tk.LEFT,command=lambda:text_editor.event_generate("<<Copy>>"))
+edit.add_command(label="Paste",image=paste_icon,compound=tk.LEFT,command=lambda:text_editor.event_generate("<<Paste>>"))
+edit.add_command(label="Clear All",image=clear_icon,compound=tk.LEFT,command=lambda:text_editor.delete(1.0,tk.END))
+edit.add_command(label="Find",image=find_icon,compound=tk.LEFT,command=find_func)
 
 #view menu commands
 view.add_checkbutton(label="Toolbar",image=toolbar_icon,compound=tk.LEFT)
