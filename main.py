@@ -5,8 +5,9 @@ import os
 # Main application begin's
 
 application=tk.Tk()
-application.geometry('1200x800')
-application.title('MyPersonal Text Editor')
+application.geometry('1000x600')
+application.title('MyPer$onal Text Editor')
+application.wm_iconbitmap('code.ico')
 #......................................Main Menu ...........................
 main_menu=tk.Menu(application)
 #file
