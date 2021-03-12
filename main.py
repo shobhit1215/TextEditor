@@ -38,9 +38,9 @@ color_theme=tk.Menu(main_menu,tearoff=0)
 theme_choice=tk.StringVar()
 color_icons=(light_default,dark,red)
 color_dict={
-    'Light_default':{'#000000','#ffffff'},
-    'Dark':{'#c4c4c4','#2d2d2d'},
-    'Red':{'#2d2d2d','#ffe848'}
+    'Light_default':('#000000','#ffffff'),
+    'Dark':('#c4c4c4','#2d2d2d'),
+    'Red':('#ff0000','#ffe848')
 }
 count=0
 #cascading submenues in main_menu
@@ -285,14 +285,38 @@ def exit_func(event=None):
 
 
 #file menu commands
-file.add_command(label="New",image=new_icon,compound=tk.LEFT,command=new_file)
-file.add_command(label="Open",image=open_icon,compound=tk.LEFT,command=open_file)
-file.add_command(label="Save",image=save_icon,compound=tk.LEFT,command=save_file)
+file.add_command(label="New    ",image=new_icon,compound=tk.LEFT,command=new_file)
+file.add_command(label="Open   ",image=open_icon,compound=tk.LEFT,command=open_file)
+file.add_command(label="Save   ",image=save_icon,compound=tk.LEFT,command=save_file)
 file.add_command(label="Save As",image=saveas_icon,compound=tk.LEFT,command=saveas_file)
-file.add_command(label="Exit",image=exit_icon,compound=tk.LEFT,command=exit_func)
+file.add_command(label="Exit   ",image=exit_icon,compound=tk.LEFT,command=exit_func)
 
 # Edit file functionalities
 def find_func():
+
+    def find():
+        word=find_input.get()
+        text_editor.tag_remove('match','1.0',tk.END)
+        matches=0
+        if word:
+            start_pos='1.0'
+            while True:
+                start_pos=text_editor.search(word,start_pos,stopindex=tk.END)
+                if not start_pos:
+                    break
+                end_pos=f"{start_pos}+{len(word)}c"
+                text_editor.tag_add('match',start_pos,end_pos)
+                matches+=1
+                start_pos=end_pos
+                text_editor.tag_config('match',foreground='red',background='yellow')
+    def replace():
+        word=find_input.get()
+        replace_text=replace_input.get()
+        content=text_editor.get('1.0',tk.END)
+        new_content=content.replace(word,replace_text)
+        text_editor.delete('1.0',tk.END)
+        text_editor.insert(1.0,new_content)
+
     find_dialogue=tk.Toplevel()
     find_dialogue.geometry('400x250+500+200')
     find_dialogue.title("Find")
@@ -307,8 +331,8 @@ def find_func():
     find_input=ttk.Entry(find_frame,width=30)
     replace_input=ttk.Entry(find_frame,width=30)
 
-    find_bttn=ttk.Button(find_frame,text='Find')
-    replace_bttn=ttk.Button(find_frame,text='Replace',)
+    find_bttn=ttk.Button(find_frame,text='Find',command=find)
+    replace_bttn=ttk.Button(find_frame,text='Replace',command=replace)
 
     text_find_label.grid(row=0,column=0,padx=4,pady=4)
     text_replace_label.grid(row=1, column=0, padx=4, pady=4)
@@ -327,13 +351,48 @@ edit.add_command(label="Paste",image=paste_icon,compound=tk.LEFT,command=lambda:
 edit.add_command(label="Clear All",image=clear_icon,compound=tk.LEFT,command=lambda:text_editor.delete(1.0,tk.END))
 edit.add_command(label="Find",image=find_icon,compound=tk.LEFT,command=find_func)
 
+#View Functionality
+
+show_statusbar=tk.BooleanVar()
+show_statusbar.set(True)
+show_toolbar=tk.BooleanVar()
+show_toolbar.set(True)
+def hide_toolbar():
+    global show_toolbar
+    if show_toolbar:
+        tool_bar.pack_forget()
+        show_toolbar=False
+    else:
+        text_editor.pack_forget()
+        status_bar.pack_forget()
+        tool_bar.pack(side=tk.TOP,fill=tk.X)
+        text_editor.pack(fill=tk.BOTH,expand=True)
+        status_bar.pack(side=tk.BOTTOM)
+        show_toolbar=True
+def hide_statusbar():
+    global show_statusbar
+    if show_statusbar:
+        status_bar.pack_forget()
+        show_statusbar=False
+    else:
+        status_bar.pack(side=tk.BOTTOM)
+        show_statusbar=True
+
+
 #view menu commands
-view.add_checkbutton(label="Toolbar",image=toolbar_icon,compound=tk.LEFT)
-view.add_checkbutton(label="Status Bar",image=statusbar_icon,compound=tk.LEFT)
+view.add_checkbutton(label="Toolbar",onvalue=True,offvalue=0,variable=show_toolbar,image=toolbar_icon,compound=tk.LEFT,command=hide_toolbar)
+view.add_checkbutton(label="Status Bar",onvalue=1,offvalue=False,variable=show_statusbar,image=statusbar_icon,compound=tk.LEFT,command=hide_statusbar)
 
 #theme commands
+def change_theme():
+    chosen_theme=theme_choice.get()
+    colors=color_dict.get(chosen_theme)
+    fgcolor,bgcolor=colors[0],colors[1]
+    text_editor.config(background=bgcolor,fg=fgcolor)
+
+
 for i in color_dict:
-    color_theme.add_radiobutton(label=i,image=color_icons[count],variable=theme_choice,compound=tk.LEFT)
+    color_theme.add_radiobutton(label=i,image=color_icons[count],variable=theme_choice,compound=tk.LEFT,command=change_theme)
     count=count+1
 
 
@@ -342,8 +401,14 @@ for i in color_dict:
 
 #..........................................End Main Menu ...........................
 
-
-
 application.config(menu=main_menu)
+#
+# application.bind("<Control-o>",open_file)
+# application.bind("<Control-n>",new_file)
+# application.bind("<Control-s>",save_file)
+#application.bind("<Control-Alt-s>",saveas_file)
+# application.bind("<Control-q>",quit)
+
+
 application.mainloop()
 
